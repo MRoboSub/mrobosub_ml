@@ -11,12 +11,12 @@ chmod +x ./*.sh
 git config core.filemode false
 
 echo
-echo "---Setting up yolov5 repo---"
-if [ ! -d 'yolov5/.git' ]
+echo "---Setting up yolov11_obb repo---"
+if [ ! -d 'yolov11_obb/.git' ]
 then
-    git clone https://github.com/ultralytics/yolov5
+    git clone https://github.com/ultralytics/ultralytics/tree/main/ultralytics/models/yolo/obb yolov11_obb
 else
-    cd yolov5
+    cd yolov11_obb
     git pull --no-rebase
     cd ..
 fi

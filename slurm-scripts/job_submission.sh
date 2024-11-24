@@ -20,7 +20,7 @@ LINE=$(sed -n "$one"p Parameters.txt)
 #job array ver: #MESSAGE="TASK ID: $SLURM_ARRAY_TASK_ID and LINE reads: $LINE"
 echo "LINE reads: $LINE"
 
-chmod +x Yolov5s.sh
-./Yolov5s.sh $LINE 
+chmod +x Yolov11s.sh
+./Yolov11s.sh $LINE 
 
 echo "________________________END________________________"
