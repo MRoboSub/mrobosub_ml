@@ -1,73 +1,168 @@
+import asyncio
 import os
 import sys
 import json
-import glob
 import random
-import shutil
+from httpx import AsyncClient
+from PIL import Image
+import io
+from typing import Literal
+from enum import Enum
+from dataclasses import dataclass
+import aiofiles
+import numpy as np
+from tqdm import tqdm
+from tqdm.asyncio import tqdm as atqdm
 
-classes = ["abydos", "earth", "taurus", "serpens_caput", "auriga", "cetus"]
+# Create and get from https://app.labelbox.com/workspace-settings/api-keys (and don't commit to git)
+API_KEY = ""
+
+
+class Classes(Enum):
+    SHARK = 0
+    SAWFISH = 1
+    BIN_SHARK = 2
+    BIN_SAWFISH = 3
+    GATE_BACK = 4
+    RED_POLE = 5
+    OCTAGON = 6
+    BIN_FAR = 7
+
+
+@dataclass
+class Bbox:
+    left: float
+    top: float
+    right: float
+    bottom: float
+
+    @property
+    def x_center(self) -> float:
+        return self.left + self.width / 2
+
+    @property
+    def y_center(self) -> float:
+        return self.top + self.height / 2
+
+    @property
+    def width(self) -> float:
+        return self.right - self.left
+
+    @property
+    def height(self) -> float:
+        return self.bottom - self.top
+
+
+def mask_to_bbox(mask: Image.Image) -> Bbox:
+    assert mask.mode == "L"
+
+    mask_array = np.array(mask)
+    y_indices, x_indices = np.where(mask_array > 0)
+    if len(x_indices) == 0 or len(y_indices) == 0:
+        return Bbox(0, 0, 0, 0)
+
+    left = float(np.min(x_indices))
+    top = float(np.min(y_indices))
+    right = float(np.max(x_indices))
+    bottom = float(np.max(y_indices))
+
+    return Bbox(left, top, right, bottom)
+
+
+async def image_task(
+    client: AsyncClient, image_json, batch: Literal["train"] | Literal["test"]
+):
+    assert image_json["media_attributes"]["mime_type"] == "image/png"
+    image_name = image_json["data_row"]["external_id"]
+    image_data_url = image_json["data_row"]["row_data"]
+    image_data_res = await client.get(image_data_url, timeout=None)
+    image_data = image_data_res.content
+    project = image_json["projects"]["cmeaykrdk0lvm07y1eriofb1o"]
+    labels: dict[str, list[tuple[Classes, Bbox]]] = {}
+    for labeler in project["labels"]:
+        name = labeler["label_details"]["created_by"]
+        labels[name] = []
+        for label in labeler["annotations"]["objects"]:
+            mask_data_url = label["mask"]["url"]
+            mask_data_res = await client.get(mask_data_url, timeout=None)
+            mask = Image.open(io.BytesIO(mask_data_res.content))
+            bbox = mask_to_bbox(mask)
+            class_name = label["value"].upper()
+            classification: Classes = getattr(Classes, class_name)
+            labels[name].append((classification, bbox))
+    # reconsile duplicates?
+    image_base = image_name.rstrip(".jpg").rstrip(".png")
+    w = image_json["media_attributes"]["width"]
+    h = image_json["media_attributes"]["height"]
+
+    async with aiofiles.open(f"{batch}/images/{image_name}", mode="wb") as f:
+        await f.write(image_data)
+
+    lines: list[str] = []
+    if len(labels) != 0:
+        for classification, bbox in next(
+            iter(labels.values())  # only use the first labeler
+        ):
+            lines.append(
+                f"{classification.value} {bbox.x_center / w} {bbox.y_center / h} {bbox.width / w} {bbox.height / h}"
+            )
+
+    async with aiofiles.open(f"{batch}/labels/{image_base}.txt", mode="w") as f:
+        await f.write("\n".join(lines))
+
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
+
 
 def generateFiles(json_file_name):
-    LABEL_PATH = "temp"
-    IMG_PATH = "temp"
-
-    files = glob.glob("images/*")
-    if len(files) == 0:
-        print("No \"images\" folder detected.") 
-        print("\"images\" folder should have preprocessed images.")
-        exit()
-
     # Create Data/images and Data/labels
     try:
-        os.mkdir("TRAIN")
-        os.mkdir("TRAIN/images")
-        os.mkdir("TRAIN/labels")
-        os.mkdir("TEST")
-        os.mkdir("TEST/images")
-        os.mkdir("TEST/labels")
+        os.mkdir("train")
+        os.mkdir("train/images")
+        os.mkdir("train/labels")
+        os.mkdir("test")
+        os.mkdir("test/images")
+        os.mkdir("test/labels")
     except:
-        print("Error generating the TRAIN/TEST directories - did they already exist?")
+        print("Error generating the train/test directories - did they already exist?")
         exit()
 
-    # Parse JSON file from LabelBox
-    # - Creates label text files (e.g. 02-14-2021_1.png)
+    jsons = []
     with open(json_file_name) as f1:
-
         for line in f1:
-            z = json.loads(line)
-            file = z["data_row"]["external_id"]
-            file = file.split(".")[0]
-            img_width, img_height = float(file.split("_")[1]), float(file.split("_")[2])
+            jsons.append(json.loads(line))
+    random.shuffle(jsons)
+    num_test = len(jsons) // 10
+    test = jsons[:num_test]
+    train = jsons[num_test:]
 
-            objects = z["projects"][list(z["projects"].keys())[0]]["labels"][0]["annotations"]["objects"]
-            if objects: # if there is a label for this image
+    headers = {"Authorization": f"Bearer {API_KEY}"}
 
-                if random.random() < .1: #choose test or train
-                    LABEL_PATH = "TEST/labels/{}.txt".format(file)
-                    IMG_PATH = "TEST/images/{}.png".format(file)
-                else:
-                    LABEL_PATH = "TRAIN/labels/{}.txt".format(file)
-                    IMG_PATH = "TRAIN/images/{}.png".format(file)
+    async def gather():
+        async with AsyncClient(headers=headers) as client:
+            flist = []
+            for test_json in test:
+                f = image_task(client, test_json, "test")
+                flist.append(f)
+            for train_json in train:
+                f = image_task(client, train_json, "train")
+                flist.append(f)
+            for batch in tqdm(chunks(flist, 20), total=(len(flist) + 1) // 20):
+                await atqdm.gather(*batch)
 
-                with open(LABEL_PATH, "w+") as f2:
-                    for cnt, label in enumerate(objects): # loop through labels in this image and write to label file
-                        x_center = (label["bounding_box"]["left"] + (label["bounding_box"]["width"] / 2.0)) / img_width
-                        y_center = (label["bounding_box"]["top"] + (label["bounding_box"]["height"] / 2.0)) / img_height
-                        width = label["bounding_box"]["width"] / img_width
-                        height = label["bounding_box"]["height"] / img_height
-                        class_name = classes.index(label["name"])
-                        f2.write("{} {} {} {} {}".format(class_name, x_center, y_center, width, height))
-                        if cnt < len(objects) - 1:
-                            f2.write("\n")
-                try:
-                    shutil.move("images/{}.png".format(file), IMG_PATH)
-                except:
-                    print("Could not move image images/{}.png.")
-                    
+    asyncio.run(gather())
+
 
 # Main Function
-if __name__ == '__main__':
+if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("[ERROR] usage: python3 generateTrainingFiles.py [JSONFILE]")
         exit()
+    if API_KEY == "":
+        print("[ERROR]: Must set API_KEY variable")
+        exit()
     generateFiles(str(sys.argv[1]))
+
