@@ -6,7 +6,7 @@ import random
 from httpx import AsyncClient
 from PIL import Image
 import io
-from typing import Literal
+from typing import Literal, Union
 from enum import Enum
 from dataclasses import dataclass
 import aiofiles
@@ -14,8 +14,16 @@ import numpy as np
 from tqdm import tqdm
 from tqdm.asyncio import tqdm as atqdm
 
-# Create and get API_KEY from https://app.labelbox.com/workspace-settings/api-keys (and don't commit to git)
-API_KEY = ""
+# Create and get API_KEY from https://app.labelbox.com/workspace-settings/api-keys (don't commit your key to git!!)
+# Set key as env var using $ export LABELBOX_API_KEY="your_actual_api_key_value"
+API_KEY = os.getenv("LABELBOX_API_KEY")
+
+if API_KEY is not None:
+    print(f"API Key successfully loaded")
+else:
+    print("API Key not found. Make sure the environment variable is set.")
+    exit(1)
+
 PROJECT_ID = "cmeaykrdk0lvm07y1eriofb1o" # 2025 project ID on labelbox
 
 class Classes(Enum):
@@ -27,7 +35,6 @@ class Classes(Enum):
     RED_POLE = 5
     OCTAGON = 6
     BIN_FAR = 7
-
 
 @dataclass
 class Bbox:
@@ -79,16 +86,17 @@ Format of output entry: [class number] [bbox.x_center] [bbox.y_center] [bbox.wid
 where the last 4 entries have been scaled down into range [0, 1] relative to the image width/height
 """
 async def image_task(
-    client: AsyncClient, image_json, batch: Literal["train"] | Literal["test"]
+    mask_client: AsyncClient, image: AsyncClient, image_json, batch: Union[Literal["train"], Literal["test"]]
 ):
     assert image_json["media_attributes"]["mime_type"] == "image/png"
 
     # pull the actual image from labelbox
     image_name = image_json["data_row"]["external_id"]
     image_data_url = image_json["data_row"]["row_data"]
-    async with AsyncClient() as default_client:
-        # have to use a client without headers as image_data_url is a signed link and including an auth header messes it up
-        image_data_res = await default_client.get(image_data_url, timeout=None)
+
+    image_data_res = await image.get(image_data_url, timeout=None)
+    # have to use a client without headers as image_data_url is a signed link and including an auth header messes it up
+
     image_data = image_data_res.content
 
     project = image_json["projects"][PROJECT_ID]
@@ -98,23 +106,28 @@ async def image_task(
         labels[name] = []
         for label in labeler["annotations"]["objects"]:
             mask_data_url = label["mask"]["url"]
-            mask_data_res = await client.get(mask_data_url, timeout=None) # fetch mask from labelbox
+            mask_data_res = await mask_client.get(mask_data_url, timeout=None) # fetch mask from labelbox
+            if mask_data_res.status_code != 200:
+                continue
             mask = Image.open(io.BytesIO(mask_data_res.content))
             # the mask is a 2D image: white inside bounding box and black everywhere else
             bbox: Bbox = mask_to_bbox(mask)
             class_name = label["value"].upper() # class_name, for instance, might be BIN_SAWFISH
             classification: Classes = getattr(Classes, class_name)
             labels[name].append((classification, bbox))
+        if len(labels[name]) == 0:
+            labels.pop(name, "") # if this labeler has no actually useful masks/labellings, remove them
     # reconcile duplicates?
     image_base = image_name.rstrip(".jpg").rstrip(".png")
     w = image_json["media_attributes"]["width"]
     h = image_json["media_attributes"]["height"]
 
-    async with aiofiles.open(f"{batch}/images/{image_name}", mode="wb") as f:
-        await f.write(image_data)
-
     lines: list[str] = []
     if len(labels) != 0:
+
+        async with aiofiles.open(f"{batch}/images/{image_name}", mode="wb") as f:
+            await f.write(image_data)
+
         for classification, bbox in next(
             iter(labels.values())  # same image might have been labeled by multiple people, only use the first labeler
         ):
@@ -122,8 +135,8 @@ async def image_task(
                 f"{classification.value} {bbox.x_center / w} {bbox.y_center / h} {bbox.width / w} {bbox.height / h}"
             ) # class number and the values x_center, y_center, width, height scaled down by width and height of the image to be in range [0,1]
 
-    async with aiofiles.open(f"{batch}/labels/{image_base}.txt", mode="w") as f:
-        await f.write("\n".join(lines))
+        async with aiofiles.open(f"{batch}/labels/{image_base}.txt", mode="w") as f:
+            await f.write("\n".join(lines))
 
 
 def chunks(lst, n):
@@ -157,13 +170,14 @@ def generateFiles(json_file_name):
     headers = {"Authorization": f"Bearer {API_KEY}"}
 
     async def gather():
-        async with AsyncClient(headers=headers) as client:
+        async with AsyncClient(headers=headers) as header_client ,\
+               AsyncClient() as default_client:
             flist = []
             for test_json in test:
-                f = image_task(client, test_json, "test")
+                f = image_task(header_client, default_client, test_json, "test")
                 flist.append(f)
             for train_json in train:
-                f = image_task(client, train_json, "train")
+                f = image_task(header_client, default_client, train_json, "train")
                 flist.append(f)
             for batch in tqdm(chunks(flist, 20), total=(len(flist) + 1) // 20):
                 await atqdm.gather(*batch)
@@ -174,9 +188,6 @@ def generateFiles(json_file_name):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("[ERROR] usage: python3 LabelAndPartition.py [JSONFILE].ndjson")
-        exit()
-    if API_KEY == "":
-        print("[ERROR]: Must set API_KEY variable")
         exit()
     generateFiles(str(sys.argv[1]))
 
