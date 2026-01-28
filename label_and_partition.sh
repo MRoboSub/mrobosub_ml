@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# NOTE: you can use this script to run LabelAndPartition as an sbatch job
-# $ sbatch label_and_partition.sh
+# NOTE: to run LabelAndPartition as an sbatch job, run $ sbatch label_and_partition.sh
 
 #SBATCH --job-name=label_and_partition
 #SBATCH --account=lsa2 # this might need to be changed, run $ my_accounts to see options

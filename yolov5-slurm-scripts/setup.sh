@@ -1,5 +1,5 @@
 #!/bin/bash
-USAGE="USAGE: ./setup.sh [training data git url] [test data git url]"
+USAGE="USAGE: ./setup.sh"
 if [ "$1" == "usage" ] || [ "$1" == "Usage" ] || [ "$1" == "USAGE" ]
 then
     echo $USAGE
@@ -22,17 +22,6 @@ else
 fi
 echo
 
-echo
-echo "---Setting up dataset repo---"
- if [ ! -d 'mrobosub_datasets/.git' ]
-then
-    git clone https://gitlab.eecs.umich.edu/mrobosub/mrobosub_dataset_2023.git
-    cd mrobosub_dataset_2023
-    git pull --no-rebase
-    cd ..
-fi
-echo
-
 echo "---Setting up virtual environment---"
 NAME=training_env
 cd ..
@@ -48,5 +37,5 @@ else
     echo "virtual environment already exists"
 fi
 python3 -m venv --upgrade training_env/
-cd hpc-cluster-slurm-submission-scripts
+cd yolov5-slurm-scripts
 echo

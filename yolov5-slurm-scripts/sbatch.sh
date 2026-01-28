@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# this script runs job_submission.sh on slurm compute node and collects logs
+# job_submission.sh in turn runs Yolov5s.sh
+
 while getopts r flag
 do
     case "$flag" in

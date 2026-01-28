@@ -1,4 +1,4 @@
-# HPC-cluster-slurm-submission-scripts Guide
+# yolov5-slurm-scripts Guide
 Scripts to be run on a HPC cluster to train a model using Yolov5, organize Yolov5 output, and assist in sorting and transferring test data, training data, and the yolov5 program to a HPC cluster.<br><br>
 **By Andrew Huston, James Leung** <br>
 hustona@umich.edu  
@@ -7,14 +7,14 @@ jameleu@umich.edu <br><br>
 muskaan@umich.edu <br>
 
 #### Table of Contents
-  * [How to Train a Model](https://gitlab.eecs.umich.edu/mrobosub/hpc-cluster-slurm-submission-scripts#how-to-train-a-model)
-    * [SSH into Great Lakes Cluster](https://gitlab.eecs.umich.edu/mrobosub/hpc-cluster-slurm-submission-scripts#ssh-into-great-lakes-cluster)
-    * [Clone hpc-cluster-slurm-submission-scripts Repository into Cluster](https://gitlab.eecs.umich.edu/mrobosub/hpc-cluster-slurm-submission-scripts#clone-hpc-cluster-slurm-submission-scripts-repository-into-cluster)
-    * [Steps to Train](https://gitlab.eecs.umich.edu/mrobosub/hpc-cluster-slurm-submission-scripts#steps-to-train-model) 
-  * [Updating HPC Cluster Scripts](https://gitlab.eecs.umich.edu/mrobosub/hpc-cluster-slurm-submission-scripts#updating-hpc-cluster-scripts)
-  * [Modifying Training Settings](https://gitlab.eecs.umich.edu/mrobosub/hpc-cluster-slurm-submission-scripts#modifying-training-settings)
-  * [Output of Model Training](https://gitlab.eecs.umich.edu/mrobosub/hpc-cluster-slurm-submission-scripts#output-of-model-training)
-  * [Additional Information about these Scripts](https://gitlab.eecs.umich.edu/mrobosub/hpc-cluster-slurm-submission-scripts#additional-information-about-these-scripts)
+  * [How to Train a Model](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#how-to-train-a-model)
+    * [SSH into Great Lakes Cluster](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#ssh-into-great-lakes-cluster)
+    * [Clone yolov5-slurm-scripts Repository into Cluster](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#clone-yolov5-slurm-scripts-repository-into-cluster)
+    * [Steps to Train](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#steps-to-train-model) 
+  * [Updating HPC Cluster Scripts](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#updating-hpc-cluster-scripts)
+  * [Modifying Training Settings](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#modifying-training-settings)
+  * [Output of Model Training](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#output-of-model-training)
+  * [Additional Information about these Scripts](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#additional-information-about-these-scripts)
   
   <br>
 
@@ -54,11 +54,15 @@ $  cd mrobosub_ml
   $  ./setup.sh
   ``` 
   
-  #### 4. [Optional](https://gitlab.eecs.umich.edu/mrobosub/hpc-cluster-slurm-submission-scripts#modifying-training-settings): Make any desired options to training parameters.
+  #### 4. Make sure the dataset you want to use is in the outermost level of the mrobosub_ml repo, called mrobosub_dataset_20xx (and contains train/images, train/labels, test/images, and test/labels)
+
+  #### 5. Optional (See "Modifying Training Settings" Section Below): Make any desired options to training parameters.
 
   <br>
 
-  #### 5. Run ```sbatch.sh``` to submit the training job.
+  #### 6. Change email in job_submission.sh to your email
+
+  #### 7. Run ```sbatch.sh``` to submit the training job.
   ``` 
   $  ./sbatch.sh &
   ``` 
@@ -67,7 +71,9 @@ $  cd mrobosub_ml
 
 
 # Updating HPC Cluster Scripts
-Sometimes, the HPC Cluster git repository may need to be updated. In that case, please update the local version. To check if there are updates, go to the cloned ```hpc-cluster-slurm-submission-script``` directory and run:
+Edit Jan 2026: These steps may not work exactly anymore as the yolov5-slurm-scripts no longer has its own git repo but rather is part of mrobosub_ml git repo
+
+Sometimes, the HPC Cluster git repository may need to be updated. In that case, please update the local version. To check if there are updates, go to the cloned ```yolov5-slurm-scripts``` directory and run:
 ```
 $  git remote update
 $  git status
@@ -92,17 +98,17 @@ The following options can be used to adjust parameters for the following; otherw
   * ```-i``` - image size for training. **Default:** ```640```
   * ```-b``` - batch size. **Default**: ```64```
   * ```-e``` - number of epochs. **Default**: ```256```
-  * ```-d``` - path of ```.yaml``` file relative to ```hpc-cluster-slurm-submission-scripts/yolov5```. **Default:** ```../model.yaml```
+  * ```-d``` - path of ```.yaml``` file relative to ```yolov5-slurm-scripts/yolov5```. **Default:** ```../model.yaml```
   * ```-w``` - weights file. **Default**: ```yolov5s.pt``` (this default works, as long as have the Yolov5 program cloned locally)
   * ```-c``` - use cache when training. **Default**: no cache 
    
 ### Inferencing
-  * ```-s``` - test data directory path relative to ```hpc-cluster-slurm-submission-scripts/yolov5```. **Default:** ```../mrobosub_dataset_2023/test/images/```
+  * ```-s``` - test data directory path relative to ```yolov5-slurm-scripts/yolov5```. **Default:** ```../mrobosub_dataset_2023/test/images/```
   * ```-l``` - image size for inferencing. **Default**: ```672```
   * ```-f``` - confidence threshold for inferencing. **Default**: ```0.08```
 
 ### Shared Parameters
-  * ```-o``` - **Used for both inferencing and converting weights**: the path of the trained weights file (this file is created when the model is trained). This path is relative to ```hpc-cluster-slurm-submission-scripts/yolov5```. **Default**: ```./runs/train/exp$NUMBER/weights/best.pt```, where ```$NUMBER``` is the number of times a model has been, before the current training, previously trained with Yolov5 since Yolov5 was cloned onto the HPC cluster. This means ```$NUMBER``` starts from 0 and increases by one with each new model training. 
+  * ```-o``` - **Used for both inferencing and converting weights**: the path of the trained weights file (this file is created when the model is trained). This path is relative to ```yolov5-slurm-scripts/yolov5```. **Default**: ```./runs/train/exp$NUMBER/weights/best.pt```, where ```$NUMBER``` is the number of times a model has been, before the current training, previously trained with Yolov5 since Yolov5 was cloned onto the HPC cluster. This means ```$NUMBER``` starts from 0 and increases by one with each new model training. 
 
 ### How ```Parameters.txt``` is Used by ```job_submission.sh``` and its Implications For Using Job Arrays
 ```job_submission.sh``` reads the first line of ```Parameters.txt```. If job arrays are used, each line in ```Parameters.txt``` represents the different model parameters for each individual model training job (called a task in this case) in the job array.
@@ -116,9 +122,9 @@ See more about creating and using job arrays in the **Job Arrays** section and t
 ## Adjusting model.yaml for different datasets
 model.yaml is a file that yolov5 uses to know the location of images and labels to train and test on. It also lets the training process know the number and names of classes that the model should detect. 
 
-* ```path: ``` specifies a filepath prefix to apply to the following image locations relative to yolov5/. Default is ../mrobosub_datasets/dataset_2022.
+* ```path: ``` specifies a filepath prefix to apply to the following image locations relative to yolov5/. Default is ../../mrobosub_datasets_2025.
 * ```train: ``` specifies the location of the folder with training data images. Default is train/images.
-* ```val: ``` specifies the location of the folder with validatoin images. Default is same as train.
+* ```val: ``` specifies the location of the folder with validation images. Default is same as train.
 * ```test: ``` specifies the location of the folder with test set images. Default is test/images.
 * ```nc: ``` specifies the number of classes the model will detect
 * ```names: ``` specifies the names of these classes, with the same indexes as the labels reference them with.
@@ -161,10 +167,10 @@ For more information on possible allocations, see the **GPU Partition -> Availab
 ## Obtaining Model's ONNX File and Other Results From Cluster
 
 ### ONNX File and Training Files Locations
-The path of the ONNX file (converted trained weights), for a model is ```hpc-cluster-slurm-submission-scripts/yolov5/runs/train/exp$NUMBER/weights/best.onnx```, where ```$NUMBER``` is the number of times a model has been, before the current training, previously trained with Yolov5 since Yolov5 was cloned onto the HPC cluster (the highest number is the most recent ```exp``` directory). Many other artifacts from the training session can also be found in ```hpc-cluster-slurm-submission-scripts/yolov5/runs/train/exp$NUMBER/```.
+The path of the ONNX file (converted trained weights), for a model is ```yolov5-slurm-scripts/yolov5/runs/train/exp$NUMBER/weights/best.onnx```, where ```$NUMBER``` is the number of times a model has been, before the current training, previously trained with Yolov5 since Yolov5 was cloned onto the HPC cluster (the highest number is the most recent ```exp``` directory). Many other artifacts from the training session can also be found in ```yolov5-slurm-scripts/yolov5/runs/train/exp$NUMBER/```.
 
 ### Test Set Model Evaluation Results Location
-Similarly, the results of the newly trained model on the test set can be found in ```hpc-cluster-slurm-submission-scripts/yolov5/runs/val/exp$NUMBER```, where ```$NUMBER``` is the number of times a model has been, before the current training, previously trained with Yolov5 since Yolov5 was cloned onto the HPC cluster (the highest number is the most recent ```exp``` directory).
+Similarly, the results of the newly trained model on the test set can be found in ```yolov5-slurm-scripts/yolov5/runs/val/exp$NUMBER```, where ```$NUMBER``` is the number of times a model has been, before the current training, previously trained with Yolov5 since Yolov5 was cloned onto the HPC cluster (the highest number is the most recent ```exp``` directory).
 
 ### Using SCP to transfer ONNX File and Other Results to Local
 On your local device, navigate to the directory in which you want to receive the files. Then run the following command to transfer all desired files to the current directory: 
@@ -193,15 +199,15 @@ When the machine learning model is trained by running ```sbatch.sh```, the Yolov
 
 The file logging system for the output is taken care of through ```sbatch.sh```.
 
-**NOTE:** If ```sbatch.sh```, when running, is interrupted, or multiple instances of ```sbatch.sh``` are being run at once, the logging system will not work, and the output and error files for that training will be in ```hpc-cluster-slurm-submission-scripts```. This logging system works with job arrays. Additionally, when using job arrays, the output and error files will be separate and different for each task in the job array (based on the task ID).
+**NOTE:** If ```sbatch.sh```, when running, is interrupted, or multiple instances of ```sbatch.sh``` are being run at once, the logging system will not work, and the output and error files for that training will be in ```yolov5-slurm-scripts```. This logging system works with job arrays. Additionally, when using job arrays, the output and error files will be separate and different for each task in the job array (based on the task ID).
 
 Logging System Organizational structure:
-  * ```log_file``` - This is a directory is in ```hpc-cluster-slurm-submission-scripts``` and contains ```log_set``` directories. Created only on the first run of ```sbatch.sh``` or when the ```-r``` option is used when running ```sbatch.sh```. On the first run, ```log_files_1``` is created in ```hpc-cluster-slurm-submission-scripts```. In all other cases besides the first run or using the ```-r``` option, the most recent ```log_file``` is the storage location of the most recent ```log_set``` directory that has the output and error files of the model just trained. 
+  * ```log_file``` - This is a directory is in ```yolov5-slurm-scripts``` and contains ```log_set``` directories. Created only on the first run of ```sbatch.sh``` or when the ```-r``` option is used when running ```sbatch.sh```. On the first run, ```log_files_1``` is created in ```yolov5-slurm-scripts```. In all other cases besides the first run or using the ```-r``` option, the most recent ```log_file``` is the storage location of the most recent ```log_set``` directory that has the output and error files of the model just trained. 
   * ```log_set``` - Each time a model is trained by running ```sbatch.sh```, a new ```log_set_$NUMBER``` is created, where ```$NUMBER``` is one plus the number of ```log_set``` directories in the most recent ```log_file``` directory. This means ```$NUMBER``` starts from 1 and increases by one with each new model training. The output (```.out```) and error files (```.err```) for that specific training of the model are found in this ```log_set``` directory. 
 
 **Options:**
 
-  * ```-r``` - create a new ```log_file_$NUMBER``` directory, where ```$NUMBER``` is one plus the number of ```log_file``` directories in ```hpc-cluster-slurm-submission-scripts```. Any future output or error files from model training will be stored in a new ```log_set``` directory in this new ```log_file``` directory, and the first ```log_set``` number in this ```log_file``` directory will start from 1.
+  * ```-r``` - create a new ```log_file_$NUMBER``` directory, where ```$NUMBER``` is one plus the number of ```log_file``` directories in ```yolov5-slurm-scripts```. Any future output or error files from model training will be stored in a new ```log_set``` directory in this new ```log_file``` directory, and the first ```log_set``` number in this ```log_file``` directory will start from 1.
 
 <br>
 
@@ -217,7 +223,7 @@ In the most recent ```log_files``` that is in the most recent ```log_set```, the
 
 ## Training Scripts (Inferencing and Weight Conversion Occur, Here, Too) 
 
-To train, run, in cd ```hpc-cluster-slurm-submission-scripts```:
+To train, run, in cd ```yolov5-slurm-scripts```:
 ```
 $  ./sbatch.sh &
 ```
@@ -233,9 +239,9 @@ Running ```sbatch.sh``` runs ```job_submission.sh```, ```Yolov5s.sh```, and ```Y
 ### About ```Yolov5s.sh```
 This file enters the virtual environment created for the HPC Cluster scripts and Yolov5 and installs all Yolov5 dependencies. Using the arguments passed from ```job_submission.sh```, ```Yolov5s.sh``` uses the Yolov5 program to train the model using ```train.py```, run inferencing using ```detect.py```, and convert the weights to ONNX and other files through ```export.py```. ```train.py```, ```detect.py```, and ```export.py``` are all files from the cloned Yolov5 repository. 
 
-If inferencing and converting does not work using the HPC Cluster scripts, it can be done locally with a cloned Yolov5 program. The weights file created from training the model can be found in ```hpc-cluster-slurm-submission-scripts/yolov5/runs/train/exp$NUMBER/weights/best.pt```, where ```$NUMBER``` is the number of times a model has been, before the current training, previously trained with Yolov5 since Yolov5 was cloned onto the HPC cluster (basically a organizational numbering system starting from 0).
+If inferencing and converting does not work using the HPC Cluster scripts, it can be done locally with a cloned Yolov5 program. The weights file created from training the model can be found in ```yolov5-slurm-scripts/yolov5/runs/train/exp$NUMBER/weights/best.pt```, where ```$NUMBER``` is the number of times a model has been, before the current training, previously trained with Yolov5 since Yolov5 was cloned onto the HPC cluster (basically a organizational numbering system starting from 0).
 
-For inferencing and converting, MRobosub usually calls the following from the ```hpc-cluster-slurm-submission-scripts/yolov5``` directory:
+For inferencing and converting, MRobosub usually calls the following from the ```yolov5-slurm-scripts/yolov5``` directory:
 
 *Inferencing:*
 ```

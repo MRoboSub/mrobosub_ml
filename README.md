@@ -1,3 +1,5 @@
+This document is in the process of being updated Jan 2026 by Muskaan Mittal.
+
 ### STEP 0: Setup python environment:
 
 using uv (https://docs.astral.sh/uv/):
