@@ -1,11 +1,12 @@
 #!/bin/bash
+#SBATCH --account=lsa2 # this might need to be changed, run $ my_accounts to see options
 #SBATCH --job-name=robosub_ml_training
 #SBATCH --partition=gpu
 #SBATCH --time=00-06:00:00
-#SBATCH --mail-user=hustona@umich.edu
+#SBATCH --mail-user=muskaan@umich.edu # change to your email before you run this!!
 #SBATCH --mail-type=END
 #SBATCH --nodes=1
-#SBATCH --ntasks=36
+#SBATCH --ntasks=2 # this number used to be 36 (maybe using robosub account) but currently it isn't allowing any higher than 2
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=5000m
 #SBATCH --gres=gpu:1

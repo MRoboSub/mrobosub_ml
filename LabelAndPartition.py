@@ -1,3 +1,8 @@
+"""
+This LabelAndPartition step will take you from having a labelled dataset on Labelbox (from which you have downloaded the metadata into a .ndjson)
+to having train and test split, each containing images and labels (masks) for detected classes within those images
+"""
+
 import asyncio
 import os
 import sys

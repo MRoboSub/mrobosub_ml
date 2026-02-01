@@ -89,7 +89,7 @@ do
 done
 
 #start virtual environment (should be installed in ~)
-source ~/training_env/bin/activate
+source ~/mrobosub_ml/training_env/bin/activate
 
 #install dependencies 
 cd yolov5
