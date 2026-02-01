@@ -1,1 +1,1 @@
--i 640 -b 64 -e 128 -d ../model.yaml -w yolov5s.pt -s ../../mrobosub_dataset_2025/test/images/ -l 672 -f 0.08
+-i 640 -b 64 -e 128 -d ../model.yaml -w yolov26n.pt -s ../../mrobosub_dataset_2025/test/images/ -l 672 -f 0.08
