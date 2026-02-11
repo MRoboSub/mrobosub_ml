@@ -88,7 +88,7 @@ do
     esac
 done
 
-#start virtual environment (should be installed in ~)
+#start virtual environment
 source ~/mrobosub_ml/training_env/bin/activate
 
 #install dependencies 
@@ -116,7 +116,7 @@ echo "Training the model:"
 echo
 echo "i:$IMAGE, b:$BATCH, e:$EPOCHS, d:$DATA, w:$WEIGHTS, $CACHE"
 echo
-#make sure path arguments are according to current location: yolov5, which is in base folder
+#make sure path arguments are according to current location: yolov5
 python3 train.py --img $IMAGE --batch $BATCH --epochs $EPOCHS --data $DATA --weights $WEIGHTS $CACHE --name $EXP
 echo
 echo "Running model on test set:"

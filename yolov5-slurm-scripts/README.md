@@ -7,20 +7,27 @@ jameleu@umich.edu <br><br>
 muskaan@umich.edu <br>
 
 #### Table of Contents
-  * [How to Train a Model](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#how-to-train-a-model)
-    * [SSH into Great Lakes Cluster](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#ssh-into-great-lakes-cluster)
-    * [Clone yolov5-slurm-scripts Repository into Cluster](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#clone-yolov5-slurm-scripts-repository-into-cluster)
-    * [Steps to Train](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#steps-to-train-model) 
-  * [Updating HPC Cluster Scripts](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#updating-hpc-cluster-scripts)
-  * [Modifying Training Settings](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#modifying-training-settings)
-  * [Output of Model Training](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#output-of-model-training)
-  * [Additional Information about these Scripts](https://gitlab.eecs.umich.edu/mrobosub/yolov5-slurm-scripts#additional-information-about-these-scripts)
+## Table of Contents
+
+- [How to Train a Model](#how-to-train-a-model)
+  - [SSH into Great Lakes Cluster](#ssh-into-great-lakes-cluster)
+  - [Clone mrobosub_ml repository into cluster](#clone-mrobosub_ml-repository-into-cluster)
+  - [Steps to Train Model](#steps-to-train-model)
+
+- [Modifying Training Settings](#modifying-training-settings)
+
+- [Output of Model Training](#output-of-model-training)
+
+- [Additional Information about these Scripts](#additional-information-about-these-scripts)
   
-  <br>
+<br>
 
 # How to Train a Model
 
 ## SSH into Great Lakes Cluster
+
+You will first have to get access to the Great Lakes cluster by filling out a form online. Once you have access, run the following in your terminal:
+
 ```
 $ ssh UNIQUENAME@greatlakes.arc-ts.umich.edu
 ```
@@ -30,13 +37,20 @@ NOTE: If not on campus wifi, you will have to join the UM-VPN https://its.umich.
 
 <br>
 
-## Clone ```mrobosub_ml``` Repository into Cluster
+## Clone ```mrobosub_ml``` repository into cluster
 Run this in the directory that you want to clone ```mrobosub_ml``` in:
 ``` 
 $  git clone https://github.com/MRoboSub/mrobosub_ml.git
 $  cd mrobosub_ml
 ```
 
+Anytime you pull latest changes from the github repo, run the following from inside the yolov5-slurm-scripts directory:
+```
+$ chmod +x ./*.sh
+$ git config core.filemode false
+```
+
+This makes .sh files executable and tells git not to track changes in file modes (rwx).
 
 ## Steps to Train Model
   #### 1. Load in the correct python version to be used while training:
@@ -54,11 +68,9 @@ $  cd mrobosub_ml
   $  ./setup.sh
   ``` 
   
-  #### 4. Make sure the dataset you want to use is in the outermost level of the mrobosub_ml repo, called mrobosub_dataset_20xx (and contains train/images, train/labels, test/images, and test/labels)
+  #### 4. Make sure the dataset you want to use is at mrobosub_ml/mrobosub_dataset_20xx and contains train/images, train/labels, test/images, and test/labels
 
   #### 5. Optional (See "Modifying Training Settings" Section Below): Make any desired options to training parameters.
-
-  <br>
 
   #### 6. Change email in job_submission.sh to your email
 
@@ -66,24 +78,6 @@ $  cd mrobosub_ml
   ``` 
   $  ./sbatch.sh &
   ``` 
-
-<br>
-
-
-# Updating HPC Cluster Scripts
-Edit Jan 2026: These steps may not work exactly anymore as the yolov5-slurm-scripts no longer has its own git repo but rather is part of mrobosub_ml git repo
-
-Sometimes, the HPC Cluster git repository may need to be updated. In that case, please update the local version. To check if there are updates, go to the cloned ```yolov5-slurm-scripts``` directory and run:
-```
-$  git remote update
-$  git status
-```
-
-Then, if the HPC Cluster scripts local version is not up to date with the master branch of the HPC cluster scripts repository, to update, run:
-```
-$  ./force_update.sh
-```
-This git resets, git pulls, then adds ```rwx``` access to the user. When this runs, the gitlab username and password of an account in the MRobosub Gitlab needs to be given.
 
 <br>
 
