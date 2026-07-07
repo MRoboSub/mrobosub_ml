@@ -1,4 +1,4 @@
-This document is in the process of being updated Jan 2026 by Muskaan Mittal.
+Updated Jan 2026 by Muskaan Mittal
 
 ### STEP 0: Setup python environment
 You will have to do this both on local computer and eventually on cluster (or wherever you want to run this stuff).
@@ -43,10 +43,7 @@ If running on HPC, change the mail-user email ID in label_and_partition.sh to yo
 Use the README.md within the yolovX-slurm-scripts folder to train the model
 
 ### STEP 4: Use Model for Inference
-Once model is trained, move over its values into main mrobosub repo (as opposed to mrobosub_ml repo) and use it for inference within the main codebase! (tbd on detailed steps for this).
-
-
-
+Once model is trained, copy over best.pt (the weights) into main mrobosub repo (mrobosub_perception/models/[20xx]_ml_best.pt). Update the filename in seg_executor.py to this path and you are now ready to run ML inference!
 
 ### SLURM 101
 
