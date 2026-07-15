@@ -1,0 +1,4 @@
+train: /home/zayn/mrobosub_ml/yolov8_seg/train/images
+val: /home/zayn/mrobosub_ml/yolov8_seg/test/images
+nc: 2
+names: ['pathmarker', 'sandbag']
